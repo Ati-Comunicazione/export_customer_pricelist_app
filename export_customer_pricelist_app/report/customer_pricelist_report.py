@@ -24,6 +24,7 @@ class ExportCustomerPricelistReport(models.AbstractModel):
 				price_discount = (100 * (price_discount))/product.list_price
 			else:
 				price_discount = 0.0
+				qty_available = product.qty_available
 			value.update({
 				'product_id'         : product.id,
 				'product_name'       : product.name or '',
@@ -32,6 +33,7 @@ class ExportCustomerPricelistReport(models.AbstractModel):
 				'public_price'		 : product.lst_price or 0.0,
 				'price_discount'	 : price_discount or 0.0,
 				'customer_price'	 : customer_price or 0.0,
+				'product_qty_available': qty_available or 0.0,
 			}) 
 			lines.append(value)
 		return lines

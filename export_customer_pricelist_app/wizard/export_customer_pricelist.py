@@ -43,61 +43,66 @@ class ExportCustomerPricelist(models.TransientModel):
 			workbook = xlsxwriter.Workbook('/tmp/'+file_path)
 			worksheet = workbook.add_worksheet('Export Customer Pricelist')
 			
-			header_format = workbook.add_format({'bold': True,'valign':'vcenter','font_size':16,'align': 'center','bg_color':'#D8D8D8'})
-			title_format = workbook.add_format({'border': 1,'bold': True, 'valign': 'vcenter','align': 'center', 'font_size':14,'bg_color':'#D8D8D8'})
+# 			header_format = workbook.add_format({'bold': True,'valign':'vcenter','font_size':16,'align': 'center','bg_color':'#D8D8D8'})
+# 			title_format = workbook.add_format({'border': 1,'bold': True, 'valign': 'vcenter','align': 'center', 'font_size':14,'bg_color':'#D8D8D8'})
 			cell_wrap_format_bold = workbook.add_format({'border': 1, 'bold': True,'valign':'vjustify','valign':'vcenter','align': 'center','font_size':12,'bg_color':'#D8D8D8'}) ##E6E6E6
 			cell_wrap_format = workbook.add_format({'border': 1,'valign':'vjustify','valign':'vcenter','align': 'left','font_size':12,}) ##E6E6E6
 
 			worksheet.set_row(1,20)  #Set row height
 			#Merge Row Columns
-			TITLEHEDER = 'Export Customer Pricelist' 
+# 			TITLEHEDER = 'Export Customer Pricelist' 
 
 			worksheet.set_column(0, 0, 20)
 			worksheet.set_column(1, 6, 25)
 
 			partner_ids = self.env['res.partner'].browse(self.partner_ids.ids)
 
-			worksheet.merge_range(1, 0, 1, 6, TITLEHEDER,header_format)
+# 			worksheet.merge_range(1, 0, 1, 6, TITLEHEDER,header_format)
 			rowscol = 1
 			for partner in partner_ids:
 				if partner.property_product_pricelist:
-					worksheet.merge_range(rowscol + 2, 0, rowscol + 2, 6, str(partner.name), title_format)
-					rowscol = rowscol + 2
+# 					worksheet.merge_range(rowscol + 2, 0, rowscol + 2, 6, str(partner.name), title_format)
+					rowscol = 0
 					pricelist_id = partner.property_product_pricelist
-					worksheet.write(rowscol + 2, 0, 'Product Id', cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 1, 'Product Name', cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 2, 'Product Code',cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 3, 'Barcode', cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 4, 'Public Price', cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 5, 'Discount', cell_wrap_format_bold)
-					worksheet.write(rowscol + 2, 6, 'Customer Price', cell_wrap_format_bold)
+					worksheet.write(rowscol, 0, 'COD',cell_wrap_format_bold)
+					worksheet.write(rowscol, 1, 'DESCRIZIONE', cell_wrap_format_bold)
+					worksheet.write(rowscol, 2, 'EAN 13 / Barcode', cell_wrap_format_bold)
+					worksheet.write(rowscol, 3, 'PREZZO ACQUISTO A SATI / IVA ESCLUSA', cell_wrap_format_bold)
+					worksheet.write(rowscol, 4, 'PREZZO PUBBLICO /    IVA INCLUSA', cell_wrap_format_bold)
+					worksheet.write(rowscol, 5, 'QTY DISPONIBILE', cell_wrap_format_bold)
 					product_ids = self.env['product.product'].search([])
-					rows = (rowscol + 3)
+					rows = 1
 					for product in product_ids:
-						worksheet.write(rows, 0, product.id, cell_wrap_format)
-						worksheet.write(rows, 1, product.name or '', cell_wrap_format)
-						worksheet.write(rows, 2, product.default_code or '', cell_wrap_format)
+						customer_price = pricelist_id._compute_price_rule([(product, 1.0, partner)])[product.id][0]
+						if customer_price > 5:
+							worksheet.write(rows, 0, product.default_code or '', cell_wrap_format)
+							worksheet.write(rows, 1, product.name or '', cell_wrap_format)
 
-						if product.barcode == False:
-							worksheet.write(rows, 3,'',cell_wrap_format)
-						else:
-							worksheet.write(rows, 3, product.barcode, cell_wrap_format)
+							if product.barcode == False:
+								worksheet.write(rows, 2,'',cell_wrap_format)
+							else:
+								worksheet.write(rows, 2, product.barcode, cell_wrap_format)
 
-						lst_price = ('%.2f'% float(product.lst_price or 0.0))
-						worksheet.write(rows, 4, str(lst_price or 0.0) ,cell_wrap_format)
-						# Pricelist Calculation
-						customer_price = pricelist_id._compute_price_rule(
-												[(product, 1.0, partner)], date=fields.Date.today(), uom_id=product.uom_id.id)[product.id][0]
-						price_discount = 0.0
-						if product.list_price > customer_price:
-							price_discount = product.list_price - customer_price
-							price_discount = (100 * (price_discount))/product.list_price
-						else:
+							# Pricelist Calculation
+							customer_price = pricelist_id._compute_price_rule(
+													[(product, 1.0, partner)], date=fields.Date.today(), uom_id=product.uom_id.id)[product.id][0]
 							price_discount = 0.0
-						worksheet.write(rows, 5,str(price_discount), cell_wrap_format)
-						worksheet.write(rows, 6,str(customer_price), cell_wrap_format)
-						rows = rows + 1
-					rowscol = rows
+							if product.list_price > customer_price:
+								price_discount = product.list_price - customer_price
+								price_discount = (100 * (price_discount))/product.list_price
+							else:
+								price_discount = 0.0
+							# worksheet.write(rows, 4,str(price_discount), cell_wrap_format)
+							#worksheet.write(rows, 3,str(customer_price), cell_wrap_format)
+							customer_price_str = '{0:,.2f}'.format(customer_price).replace('.', ',')
+							worksheet.write(rows, 3, customer_price_str, cell_wrap_format)
+
+							lst_price = ('%.2f'% float(product.lst_price or 0.0)).replace('.', ',')
+							worksheet.write(rows, 4, str(lst_price or 0.0) ,cell_wrap_format)
+
+							worksheet.write(rows, 5,str(int(product.qty_available)) or '', cell_wrap_format)
+							rows = rows + 1
+					rowscol += 1
 				rowscol = rowscol
 
 			workbook.close()
