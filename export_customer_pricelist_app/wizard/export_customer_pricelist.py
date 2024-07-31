@@ -67,14 +67,14 @@ class ExportCustomerPricelist(models.TransientModel):
 					worksheet.write(rowscol, 0, 'COD',cell_wrap_format_bold)
 					worksheet.write(rowscol, 1, 'DESCRIZIONE', cell_wrap_format_bold)
 					worksheet.write(rowscol, 2, 'EAN 13 / Barcode', cell_wrap_format_bold)
-					worksheet.write(rowscol, 3, 'PREZZO ACQUISTO A SATI / IVA ESCLUSA', cell_wrap_format_bold)
+					worksheet.write(rowscol, 3, 'PREZZO ACQUISTO IVA ESCLUSA', cell_wrap_format_bold)
 					worksheet.write(rowscol, 4, 'PREZZO PUBBLICO /    IVA INCLUSA', cell_wrap_format_bold)
 					worksheet.write(rowscol, 5, 'QTY DISPONIBILE', cell_wrap_format_bold)
 					product_ids = self.env['product.product'].search([])
 					rows = 1
 					for product in product_ids:
 						customer_price = pricelist_id._compute_price_rule([(product, 1.0, partner)])[product.id][0]
-						if customer_price > 5:
+						if customer_price > 0:
 							worksheet.write(rows, 0, product.default_code or '', cell_wrap_format)
 							worksheet.write(rows, 1, product.name or '', cell_wrap_format)
 
